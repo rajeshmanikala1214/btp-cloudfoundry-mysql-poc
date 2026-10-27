@@ -14,3 +14,36 @@ spring:
     activate:
       on-profile: docker
     import: configserver:http://config-server:8888
+
+---
+# SAP BTP Cloud Foundry: PostgreSQL from the bound "petclinic-db" service instance,
+# no Config Server, Eureka or Zipkin. Activated by SPRING_PROFILES_ACTIVE in manifest.yml.
+spring:
+  config:
+    activate:
+      on-profile: cf
+  cloud:
+    config:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://${vcap.services.petclinic-db.credentials.hostname}:${vcap.services.petclinic-db.credentials.port}/${vcap.services.petclinic-db.credentials.dbname}?sslmode=require
+    username: ${vcap.services.petclinic-db.credentials.username}
+    password: ${vcap.services.petclinic-db.credentials.password}
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath*:db/postgresql/schema.sql
+      data-locations: classpath*:db/postgresql/data.sql
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+server:
+  port: ${PORT:8080}
+eureka:
+  client:
+    enabled: false
+management:
+  tracing:
+    sampling:
+      probability: 0.0

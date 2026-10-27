@@ -1,0 +1,59 @@
+# SAP BTP Cloud Foundry manifest for the three database-backed services.
+# Build the jars first (see DEPLOY-BTP-CF.md), then run "cf push" from this directory.
+# All three apps share the PostgreSQL service instance "petclinic-db".
+---
+applications:
+  - name: customers-service
+    path: spring-petclinic-customers-service/target/spring-petclinic-customers-service-4.0.1.jar
+    memory: 1G
+    instances: 1
+    random-route: true
+    buildpacks:
+      - sap_java_buildpack_jakarta
+    health-check-type: http
+    health-check-http-endpoint: /actuator/health
+    timeout: 180
+    services:
+      - petclinic-db
+    env:
+      SPRING_PROFILES_ACTIVE: cf
+      SPRING_CLOUD_CONFIG_ENABLED: "false"
+      JBP_CONFIG_COMPONENTS: "jres: ['com.sap.xs.java.buildpack.jre.SAPMachineJRE']"
+      JBP_CONFIG_SAP_MACHINE_JRE: "{ version: 21.+ }"
+
+  - name: vets-service
+    path: spring-petclinic-vets-service/target/spring-petclinic-vets-service-4.0.1.jar
+    memory: 1G
+    instances: 1
+    random-route: true
+    buildpacks:
+      - sap_java_buildpack_jakarta
+    health-check-type: http
+    health-check-http-endpoint: /actuator/health
+    timeout: 180
+    services:
+      - petclinic-db
+    env:
+      # "production" enables the vets cache (CacheConfig)
+      SPRING_PROFILES_ACTIVE: cf,production
+      SPRING_CLOUD_CONFIG_ENABLED: "false"
+      JBP_CONFIG_COMPONENTS: "jres: ['com.sap.xs.java.buildpack.jre.SAPMachineJRE']"
+      JBP_CONFIG_SAP_MACHINE_JRE: "{ version: 21.+ }"
+
+  - name: visits-service
+    path: spring-petclinic-visits-service/target/spring-petclinic-visits-service-4.0.1.jar
+    memory: 1G
+    instances: 1
+    random-route: true
+    buildpacks:
+      - sap_java_buildpack_jakarta
+    health-check-type: http
+    health-check-http-endpoint: /actuator/health
+    timeout: 180
+    services:
+      - petclinic-db
+    env:
+      SPRING_PROFILES_ACTIVE: cf
+      SPRING_CLOUD_CONFIG_ENABLED: "false"
+      JBP_CONFIG_COMPONENTS: "jres: ['com.sap.xs.java.buildpack.jre.SAPMachineJRE']"
+      JBP_CONFIG_SAP_MACHINE_JRE: "{ version: 21.+ }"
