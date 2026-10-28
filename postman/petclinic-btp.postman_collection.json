@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "PetClinic on SAP BTP Cloud Foundry",
+    "description": "REST APIs of the PetClinic microservices deployed from the feature/postgresql branch.\n\nNo authorization is needed: the services have no security configured.\n\n- \"Via API Gateway\" calls go through api-gateway, which forwards them to the services (this is what the web UI uses).\n- \"Direct to services\" calls each microservice's own route.\n\nUpdate the collection variables if the routes in `cf apps` change.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    { "key": "gateway", "value": "https://api-gateway-hilarious-wolverine-bn.cfapps.us10-001.hana.ondemand.com" },
+    { "key": "customers", "value": "https://customers-service-patient-cat-ho.cfapps.us10-001.hana.ondemand.com" },
+    { "key": "vets", "value": "https://vets-service-thankful-bilby-jj.cfapps.us10-001.hana.ondemand.com" },
+    { "key": "visits", "value": "https://visits-service-spontaneous-platypus-io.cfapps.us10-001.hana.ondemand.com" },
+    { "key": "ownerId", "value": "6" },
+    { "key": "petId", "value": "7" }
+  ],
+  "item": [
+    {
+      "name": "Via API Gateway",
+      "item": [
+        {
+          "name": "Owner details (gateway calls customers + visits)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway}}/api/gateway/owners/{{ownerId}}",
+            "description": "Service-to-service example: api-gateway calls customers-service GET /owners/{id}, then visits-service GET /pets/visits?petId=..., and merges the results."
+          }
+        },
+        {
+          "name": "List owners",
+          "request": { "method": "GET", "url": "{{gateway}}/api/customer/owners" }
+        },
+        {
+          "name": "Get owner",
+          "request": { "method": "GET", "url": "{{gateway}}/api/customer/owners/{{ownerId}}" }
+        },
+        {
+          "name": "Create owner",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Rajesh\",\n  \"lastName\": \"Manikala\",\n  \"address\": \"12 MG Road\",\n  \"city\": \"Hyderabad\",\n  \"telephone\": \"9876543210\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{gateway}}/api/customer/owners",
+            "description": "Returns 201 with the new owner, including its id. All fields are required; telephone is digits only, max 12."
+          }
+        },
+        {
+          "name": "Update owner",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jean\",\n  \"lastName\": \"Coleman\",\n  \"address\": \"105 N. Lake St.\",\n  \"city\": \"Monona\",\n  \"telephone\": \"6085552654\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{gateway}}/api/customer/owners/{{ownerId}}",
+            "description": "Returns 204 No Content."
+          }
+        },
+        {
+          "name": "List pet types",
+          "request": { "method": "GET", "url": "{{gateway}}/api/customer/petTypes" }
+        },
+        {
+          "name": "Add pet to owner",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bruno\",\n  \"birthDate\": \"2022-05-10\",\n  \"typeId\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{gateway}}/api/customer/owners/{{ownerId}}/pets",
+            "description": "Returns 201 with the new pet. birthDate is yyyy-MM-dd and not in the future; typeId comes from List pet types (2 = dog)."
+          }
+        },
+        {
+          "name": "Get pet",
+          "request": { "method": "GET", "url": "{{gateway}}/api/customer/owners/*/pets/{{petId}}" }
+        },
+        {
+          "name": "Update pet",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Samantha\",\n  \"birthDate\": \"1995-09-04\",\n  \"typeId\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{gateway}}/api/customer/owners/*/pets/{{petId}}",
+            "description": "Returns 204 No Content."
+          }
+        },
+        {
+          "name": "List vets (cached in Redis)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway}}/api/vet/vets",
+            "description": "vets-service caches this list in the petclinic-redis instance for 60 seconds."
+          }
+        },
+        {
+          "name": "Add visit for pet",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-10-28\",\n  \"description\": \"Annual check-up\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{gateway}}/api/visit/owners/*/pets/{{petId}}/visits",
+            "description": "Returns 201 with the new visit. date is yyyy-MM-dd; petId comes from the URL."
+          }
+        },
+        {
+          "name": "List visits for pet",
+          "request": { "method": "GET", "url": "{{gateway}}/api/visit/owners/*/pets/{{petId}}/visits" }
+        },
+        {
+          "name": "Visits for several pets",
+          "request": { "method": "GET", "url": "{{gateway}}/api/visit/pets/visits?petId=7,8" }
+        },
+        {
+          "name": "Gateway health",
+          "request": { "method": "GET", "url": "{{gateway}}/actuator/health" }
+        }
+      ]
+    },
+    {
+      "name": "Direct to services",
+      "item": [
+        {
+          "name": "customers-service",
+          "item": [
+            { "name": "List owners", "request": { "method": "GET", "url": "{{customers}}/owners" } },
+            { "name": "Get owner", "request": { "method": "GET", "url": "{{customers}}/owners/{{ownerId}}" } },
+            {
+              "name": "Create owner",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Rajesh\",\n  \"lastName\": \"Manikala\",\n  \"address\": \"12 MG Road\",\n  \"city\": \"Hyderabad\",\n  \"telephone\": \"9876543210\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{customers}}/owners"
+              }
+            },
+            { "name": "List pet types", "request": { "method": "GET", "url": "{{customers}}/petTypes" } },
+            {
+              "name": "Add pet to owner",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Bruno\",\n  \"birthDate\": \"2022-05-10\",\n  \"typeId\": 2\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{customers}}/owners/{{ownerId}}/pets"
+              }
+            },
+            { "name": "Get pet", "request": { "method": "GET", "url": "{{customers}}/owners/*/pets/{{petId}}" } },
+            { "name": "Health", "request": { "method": "GET", "url": "{{customers}}/actuator/health" } }
+          ]
+        },
+        {
+          "name": "vets-service",
+          "item": [
+            { "name": "List vets", "request": { "method": "GET", "url": "{{vets}}/vets" } },
+            { "name": "Health", "request": { "method": "GET", "url": "{{vets}}/actuator/health" } }
+          ]
+        },
+        {
+          "name": "visits-service",
+          "item": [
+            { "name": "List visits for pet", "request": { "method": "GET", "url": "{{visits}}/owners/*/pets/{{petId}}/visits" } },
+            {
+              "name": "Add visit for pet",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"date\": \"2026-10-28\",\n  \"description\": \"Annual check-up\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{visits}}/owners/*/pets/{{petId}}/visits"
+              }
+            },
+            { "name": "Visits for several pets", "request": { "method": "GET", "url": "{{visits}}/pets/visits?petId=7,8" } },
+            { "name": "Health", "request": { "method": "GET", "url": "{{visits}}/actuator/health" } }
+          ]
+        }
+      ]
+    }
+  ]
+}
