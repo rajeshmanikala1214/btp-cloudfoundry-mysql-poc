@@ -1,4 +1,4 @@
-# SAP BTP Cloud Foundry manifest for the three database-backed services.
+# SAP BTP Cloud Foundry manifest for the three database-backed services and the API gateway (UI).
 # Build the jars first (see DEPLOY-BTP-CF.md), then run "cf push" from this directory.
 # All three apps share the PostgreSQL service instance "petclinic-db";
 # vets-service also uses the Redis service instance "petclinic-redis" for its cache.
@@ -57,5 +57,26 @@ applications:
     env:
       SPRING_PROFILES_ACTIVE: cf
       SPRING_CLOUD_CONFIG_ENABLED: "false"
+      JBP_CONFIG_COMPONENTS: "jres: ['com.sap.xs.java.buildpack.jre.SAPMachineJRE']"
+      JBP_CONFIG_SAP_MACHINE_JRE: "{ version: 21.+ }"
+
+  # Web UI + API gateway. The *_SERVICE_URL values are the routes of the three apps above
+  # (see "cf apps"); update them if those routes change. Explicit :443 keeps the port unambiguous.
+  - name: api-gateway
+    path: spring-petclinic-api-gateway/target/spring-petclinic-api-gateway-4.0.1.jar
+    memory: 768M
+    instances: 1
+    random-route: true
+    buildpacks:
+      - sap_java_buildpack_jakarta
+    health-check-type: http
+    health-check-http-endpoint: /actuator/health
+    timeout: 180
+    env:
+      SPRING_PROFILES_ACTIVE: cf
+      SPRING_CLOUD_CONFIG_ENABLED: "false"
+      CUSTOMERS_SERVICE_URL: https://customers-service-patient-cat-ho.cfapps.us10-001.hana.ondemand.com:443
+      VETS_SERVICE_URL: https://vets-service-thankful-bilby-jj.cfapps.us10-001.hana.ondemand.com:443
+      VISITS_SERVICE_URL: https://visits-service-spontaneous-platypus-io.cfapps.us10-001.hana.ondemand.com:443
       JBP_CONFIG_COMPONENTS: "jres: ['com.sap.xs.java.buildpack.jre.SAPMachineJRE']"
       JBP_CONFIG_SAP_MACHINE_JRE: "{ version: 21.+ }"

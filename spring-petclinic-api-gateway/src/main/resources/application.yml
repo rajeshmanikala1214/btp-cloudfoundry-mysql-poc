@@ -51,3 +51,35 @@ spring:
     activate:
       on-profile: docker
     import: configserver:http://config-server:8888
+
+---
+# SAP BTP Cloud Foundry: no Eureka or Config Server. The gateway's lb:// routes and
+# load-balanced WebClient calls are resolved by Spring Cloud's simple discovery client
+# from the deployed apps' URLs, which manifest.yml passes in as environment variables.
+# genai-service is not deployed, so the chat box answers with the fallback message.
+spring:
+  config:
+    activate:
+      on-profile: cf
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      client:
+        simple:
+          instances:
+            customers-service:
+              - uri: ${CUSTOMERS_SERVICE_URL}
+            vets-service:
+              - uri: ${VETS_SERVICE_URL}
+            visits-service:
+              - uri: ${VISITS_SERVICE_URL}
+server:
+  port: ${PORT:8080}
+eureka:
+  client:
+    enabled: false
+management:
+  tracing:
+    sampling:
+      probability: 0.0

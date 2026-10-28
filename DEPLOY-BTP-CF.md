@@ -3,7 +3,8 @@
 This branch deploys the three database-backed services — `customers-service`, `vets-service`
 and `visits-service` — as separate Cloud Foundry apps sharing one SAP BTP PostgreSQL instance.
 `vets-service` keeps its `vets` cache in an SAP BTP Redis instance.
-Config Server, Eureka, API Gateway, Admin Server and GenAI service are **not** deployed.
+`api-gateway` serves the PetClinic web UI and forwards `/api/...` calls to the three services.
+Config Server, Eureka, Admin Server and GenAI service are **not** deployed.
 
 ## What changed on this branch
 
@@ -14,7 +15,8 @@ Config Server, Eureka, API Gateway, Admin Server and GenAI service are **not** d
 | `.../src/main/resources/db/postgresql/{schema,data}.sql` | PostgreSQL versions of the MySQL scripts |
 | `.../src/main/resources/application.yml` | New `cf` profile: datasource from `VCAP_SERVICES`, Config Server / Eureka / tracing off, `server.port=${PORT}`; for vets-service also the Redis cache |
 | `spring-petclinic-vets-service/.../model/{Vet,Specialty}.java` | `implements Serializable`, so cached vets can be stored in Redis |
-| `manifest.yml` | Cloud Foundry manifest for the three apps |
+| `spring-petclinic-api-gateway/.../application.yml` | New `cf` profile: Eureka / Config Server off; `lb://` routes resolved by the simple discovery client from `*_SERVICE_URL` |
+| `manifest.yml` | Cloud Foundry manifest for the four apps |
 
 The default (local, HSQLDB, Caffeine cache) and `mysql` behaviour is unchanged; the `cf` profile is only active on Cloud Foundry.
 The `visits` table has no foreign key to `pets` on PostgreSQL, because `pets` belongs to another service
@@ -37,7 +39,7 @@ The names must match exactly: the `cf` profile reads `vcap.services.petclinic-db
    **Redis, Hyperscaler Option** (on a trial account: plan `trial`).
 4. Your user must be **Space Developer** in the target space (Cloud Foundry → Spaces → *space* → Space Members).
    Org Manager alone is not enough: creating services then fails with "You are not authorized to perform the requested action".
-5. Memory quota for 3 × 1 GB (a trial space has 4 GB).
+5. Memory quota for 3 × 1 GB + 768 MB (a trial space has 4 GB).
 
 ## Steps (Windows PowerShell)
 
@@ -56,11 +58,11 @@ cf create-service redis-cache trial petclinic-redis
 cf service petclinic-db
 cf service petclinic-redis
 
-# 4. Build the three jars (from the repository root)
+# 4. Build the four jars (from the repository root)
 $env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
-.\mvnw.cmd -pl spring-petclinic-customers-service,spring-petclinic-vets-service,spring-petclinic-visits-service -am clean package -DskipTests
+.\mvnw.cmd -pl spring-petclinic-customers-service,spring-petclinic-vets-service,spring-petclinic-visits-service,spring-petclinic-api-gateway -am clean package -DskipTests
 
-# 5. Deploy all three apps (reads manifest.yml)
+# 5. Deploy all apps (reads manifest.yml). To deploy only one app: cf push api-gateway
 cf push
 
 # 6. Check status and routes
@@ -68,6 +70,15 @@ cf apps
 ```
 
 In Command Prompt instead of PowerShell, use `set "JAVA_HOME=C:\Program Files\Java\jdk-17"` and `mvnw.cmd ...`.
+
+## Web UI
+
+Open the `api-gateway` route from `cf apps` in a browser. The other three apps are REST APIs only, so their root URL
+returns a 404 "Whitelabel Error Page" — that is expected.
+
+The gateway finds the services through `CUSTOMERS_SERVICE_URL`, `VETS_SERVICE_URL` and `VISITS_SERVICE_URL` in
+`manifest.yml`. On a fresh deployment (new random routes), push the three services first, copy their routes from
+`cf apps` into those variables, then `cf push api-gateway`. The chat box needs genai-service, which is not deployed.
 
 ## Testing
 
@@ -104,6 +115,7 @@ cf restage vets-service
 ## Cleanup
 
 ```powershell
+cf delete api-gateway -r -f
 cf delete customers-service -r -f
 cf delete vets-service -r -f
 cf delete visits-service -r -f
