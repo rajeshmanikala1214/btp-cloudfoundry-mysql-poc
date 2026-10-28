@@ -5,8 +5,14 @@ spring:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888/}
   cache:
     cache-names: vets
+    # Pinned: with the Redis starter on the classpath Spring would otherwise pick Redis
+    type: caffeine
   profiles:
     active: production
+management:
+  health:
+    redis:
+      enabled: false
 
 ---
 spring:
@@ -17,6 +23,7 @@ spring:
 
 ---
 # SAP BTP Cloud Foundry: PostgreSQL from the bound "petclinic-db" service instance,
+# "vets" cache in the bound "petclinic-redis" service instance,
 # no Config Server, Eureka or Zipkin. Activated by SPRING_PROFILES_ACTIVE in manifest.yml.
 spring:
   config:
@@ -38,12 +45,26 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
+  cache:
+    type: redis
+    redis:
+      time-to-live: 60s
+  data:
+    redis:
+      host: ${vcap.services.petclinic-redis.credentials.hostname}
+      port: ${vcap.services.petclinic-redis.credentials.port}
+      password: ${vcap.services.petclinic-redis.credentials.password}
+      ssl:
+        enabled: true
 server:
   port: ${PORT:8080}
 eureka:
   client:
     enabled: false
 management:
+  health:
+    redis:
+      enabled: true
   tracing:
     sampling:
       probability: 0.0

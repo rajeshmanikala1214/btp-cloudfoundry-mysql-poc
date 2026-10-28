@@ -21,6 +21,7 @@ import jakarta.xml.bind.annotation.XmlElement;
 import org.springframework.beans.support.MutableSortDefinition;
 import org.springframework.beans.support.PropertyComparator;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -35,7 +36,7 @@ import java.util.*;
  */
 @Entity
 @Table(name = "vets")
-public class Vet {
+public class Vet implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

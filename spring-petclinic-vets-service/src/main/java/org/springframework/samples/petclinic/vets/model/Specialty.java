@@ -17,6 +17,8 @@ package org.springframework.samples.petclinic.vets.model;
 
 import jakarta.persistence.*;
 
+import java.io.Serializable;
+
 /**
  * Models a {@link Vet Vet's} specialty (for example, dentistry).
  *
@@ -26,7 +28,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "specialties")
-public class Specialty {
+public class Specialty implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

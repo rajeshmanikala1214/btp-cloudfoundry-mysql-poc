@@ -1,6 +1,7 @@
 # SAP BTP Cloud Foundry manifest for the three database-backed services.
 # Build the jars first (see DEPLOY-BTP-CF.md), then run "cf push" from this directory.
-# All three apps share the PostgreSQL service instance "petclinic-db".
+# All three apps share the PostgreSQL service instance "petclinic-db";
+# vets-service also uses the Redis service instance "petclinic-redis" for its cache.
 ---
 applications:
   - name: customers-service
@@ -33,8 +34,9 @@ applications:
     timeout: 180
     services:
       - petclinic-db
+      - petclinic-redis
     env:
-      # "production" enables the vets cache (CacheConfig)
+      # "production" enables the vets cache (CacheConfig), stored in Redis by the cf profile
       SPRING_PROFILES_ACTIVE: cf,production
       SPRING_CLOUD_CONFIG_ENABLED: "false"
       JBP_CONFIG_COMPONENTS: "jres: ['com.sap.xs.java.buildpack.jre.SAPMachineJRE']"
